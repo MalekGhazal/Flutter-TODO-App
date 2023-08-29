@@ -12,6 +12,14 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> {
   final todosList = ToDo.todoList();
+  List<ToDo> _foundToDo = [];
+  final _todoController = TextEditingController();
+
+  @override
+  void initState() {
+    _foundToDo = todosList;
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +32,7 @@ class _HomeState extends State<Home> {
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
             child: Column(
               children: [
-                const searchBox(),
+                searchBox(),
                 Expanded(
                   child: ListView(
                     children: [
@@ -38,7 +46,7 @@ class _HomeState extends State<Home> {
                           ),
                         ),
                       ),
-                      for (ToDo todo in todosList)
+                      for (ToDo todo in _foundToDo.reversed)
                         ToDoItem(
                           todo: todo,
                           onToDoChanged: _handleToDoChange,
@@ -66,15 +74,18 @@ class _HomeState extends State<Home> {
                           spreadRadius: 0.0)
                     ],
                     borderRadius: BorderRadius.circular(10)),
-                child: const TextField(
-                  decoration: InputDecoration(
+                child: TextField(
+                  controller: _todoController,
+                  decoration: const InputDecoration(
                       hintText: 'Add a new item', border: InputBorder.none),
                 ),
               )),
               Container(
                 margin: const EdgeInsets.only(bottom: 20, right: 20),
                 child: ElevatedButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    _addToDoItem(_todoController.text);
+                  },
                   style: ElevatedButton.styleFrom(
                       backgroundColor: tdBlue,
                       minimumSize: const Size(60, 60),
@@ -96,18 +107,18 @@ class _HomeState extends State<Home> {
     return AppBar(
       backgroundColor: tdBGColor,
       elevation: 0,
-      title: Row(
+      title: const Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Icon(
+          Icon(
             Icons.menu,
             color: tdBlack,
             size: 30,
           ),
-          Container(
+          SizedBox(
             height: 40,
             width: 40,
-            child: const ClipRRect(
+            child: ClipRRect(
               child: Icon(
                 Icons.person,
                 color: tdBlack,
@@ -131,24 +142,44 @@ class _HomeState extends State<Home> {
       todosList.removeWhere((item) => item.id == id);
     });
   }
-}
 
-// ignore: camel_case_types
-class searchBox extends StatelessWidget {
-  const searchBox({
-    super.key,
-  });
+  void _addToDoItem(String todoText) {
+    setState(() {
+      todosList.add(ToDo(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          todoText: todoText));
+    });
+    _todoController.clear();
+  }
 
-  @override
-  Widget build(BuildContext context) {
+  void _runFilter(String enteredKeyword) {
+    List<ToDo> results = [];
+
+    if (enteredKeyword.isEmpty) {
+      results = todosList;
+    } else {
+      results = todosList
+          .where((item) => item.todoText!
+              .toLowerCase()
+              .contains(enteredKeyword.toLowerCase()))
+          .toList();
+    }
+
+    setState(() {
+      _foundToDo = results;
+    });
+  }
+
+  Widget searchBox() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 15),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
       ),
-      child: const TextField(
-        decoration: InputDecoration(
+      child: TextField(
+        onChanged: (value) => _runFilter(value),
+        decoration: const InputDecoration(
             contentPadding: EdgeInsets.all(0),
             prefixIcon: Icon(
               Icons.search,
